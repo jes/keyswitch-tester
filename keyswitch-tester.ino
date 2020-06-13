@@ -4,7 +4,7 @@
  * 
  * Pin assignments:
  *   9 - servo
- *   13 - status LED
+ *   10 - status LED
  *   2 - switch (normally open, connect to ground to activate)
  * 
  * Output over serial at 9600 baud
