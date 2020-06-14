@@ -16,12 +16,18 @@ Print 1 each of servohorn.stl, keyswitch-tester.stl, and a holder for whatever t
 
 You'll also need:
 
- - 5x M3 threaded insert
- - 1x micro servo
- - 1x LED
- - 1x resistor for LED (e.g. 470 Ohm)
- - 1x Arduino Nano, Pro Micro, or similar
+ - 1x micro servo (Tower Pro SG90 or compatible)
+ - 1x Arduino (I suggest Nano, Pro Micro, or similar)
  - Some short lengths of wire
+
+Optional:
+
+ - 5x M3 threaded insert
+ - 1x LED
+ - 1x resistor for the LED (e.g. 470 Ohm)
+
+Fit the threaded inserts to the main body by holding them with tweezers while pressing down gently with a hot soldering iron. If you don't
+want to use threaded inserts you can just use slightly larger screws and thread directly into the plastic. The hole is about 4mm across.
 
 Super-glue the Arduino to the lower deck, and the LED into the hole. Screw the servo to the mounts on the upper deck. Screw the servo
 arm extension on to the servo horn, and fit it to the servo.
@@ -30,7 +36,8 @@ Solder the black/brown wire from the servo to one of the GND pins, the red wire 
 to pin 9.
 
 Solder the resistor to the negative lead of the LED, and a wire from the resistor to another GND pin. Solder the positive lead
-of the LED to pin 10.
+of the LED to pin 10. If you don't want to use an LED, the device will still work, you just won't get visual feedback of when
+the switch has been pressed.
 
 Solder a loose wire to another GND pin, and another loose wire to pin 2. Solder the other end of the loose wires to whatever
 switch you're trying to test.
