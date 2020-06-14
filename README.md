@@ -40,7 +40,8 @@ of the LED to pin 10. If you don't want to use an LED, the device will still wor
 the switch has been pressed.
 
 Solder a loose wire to another GND pin, and another loose wire to pin 2. Solder the other end of the loose wires to whatever
-switch you're trying to test.
+switch you're trying to test. Remain mindful of the fact that you need to be able to fit the switch in the holder, so do these
+operations in a sensible order.
 
 Fit your switch to your holder, and screw it to the end plate of the tester.
 
