@@ -18,9 +18,10 @@ int servopin = 9;
 int ledpin = 10;
 int switchpin = 2;
 
-int servomin = 1300;
+int servomin = 1700;
 int servomax = 2000;
-float maxspeed = 3; // servo usecs per ms
+float servospeed = 0.2; // servo usecs per ms
+float servomaxspeed = 4; // speed to reset
 
 float servopos;
 
@@ -28,8 +29,10 @@ void setup() {
   servo.attach(servopin);
   pinMode(ledpin, OUTPUT);
   pinMode(switchpin, INPUT_PULLUP);
-  servo.writeMicroseconds(servomin);
+  writeServo(servomin);
   Serial.begin(9600);
+  delay(1000); // wait for serial port to work?
+  Serial.print("keyswitch-tester begins\n");
 }
 
 void loop() {
@@ -38,7 +41,6 @@ void loop() {
   } else {
     busy_delay(1000);
   }
-  busy_delay(100); // let switch settle
 }
 
 void busy_delay(unsigned long ms) {
@@ -65,7 +67,7 @@ void writeServo(float val) {
 void resetServo() {
   float oldpos = servopos;
   writeServo(servomin);
-  busy_delay((oldpos - servomin) / maxspeed); // give the servo time to get back
+  busy_delay((oldpos - servomin) / servomaxspeed); // give the servo time to get back
 }
 
 void cycle() {
@@ -78,7 +80,7 @@ void cycle() {
       resetServo();
       return;
     }
-    pos = pos + (now - lastms) * maxspeed;
+    pos = pos + (now - lastms) * servospeed;
     lastms = millis();
     
     if (pos > servomax)
@@ -108,7 +110,7 @@ void back_cycle() {
       resetServo();
       return;
     }
-    pos = pos - (now - lastms) * maxspeed;
+    pos = pos - (now - lastms) * servospeed;
     lastms = millis();
     
     if (pos < servomin)
