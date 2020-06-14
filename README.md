@@ -6,7 +6,7 @@ You can learn more in my blog post at https://incoherency.co.uk/blog/stories/key
 
 It is not spectacularly well designed, so if you want to make one you might instead consider designing an improved version.
 
-You can [watch a video of it in action](https://www.youtube.com/watch?v=jl0PIKjTmjM)
+You can [watch a video of it in action](https://www.youtube.com/watch?v=jl0PIKjTmjM).
 
 ![Photograph of device](photo.jpg)
 
