@@ -15,7 +15,8 @@ You can [watch a video of it in action](https://www.youtube.com/watch?v=jl0PIKjT
 Print 1 each of servohorn.stl, keyswitch-tester.stl, and a holder for whatever type of switch you're using (e.g. cherry-holder.stl).
 
 If you need to make a custom switch holder, you can either start from scratch, or start from BlankHolder in keyswitch-tester.FCStd, or
-start from blank-holder.stl in other CAD software.
+start from blank-holder.stl in other CAD software. Remember that in addition to holding the switch, you also need to be able to
+route wires out.
 
 You'll also need:
 
