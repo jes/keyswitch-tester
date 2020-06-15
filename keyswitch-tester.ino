@@ -18,7 +18,7 @@ int servopin = 9;
 int ledpin = 10;
 int switchpin = 2;
 
-int servomin = 1700;
+int servomin = 1500;
 int servomax = 2000;
 float servospeed = 0.2; // servo usecs per ms
 float servomaxspeed = 4; // speed to reset
