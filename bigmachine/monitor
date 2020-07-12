@@ -1,0 +1,149 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use IO::Termios;
+use IO::Select;
+
+my $usage = "usage: monitor SERIALPORT\ne.g. monitor /dev/ttyACM0\n";
+
+my $device = shift or die "$usage\n";
+
+my $serial = IO::Termios->open($device, "115200,8,n,1")
+    or die "can't open $device: $!\n";
+
+my %function = (
+    start => \&func_start,
+    stop => \&func_stop,
+    record => \&func_record,
+    finish => \&func_finish,
+    speed => \&func_speed,
+    status => \&func_status,
+    help => \&func_help,
+    exit => \&func_quit,
+    quit => \&func_quit,
+);
+
+$| = 1;
+
+my $help = qq{
+Accepted commands:
+
+  start [RPM]    Start the motor (with optional RPM setting).
+  stop           Stop the motor.
+  record N FILE  Record the data from switch N to the given FILE.
+  finish N       Stop recording from switch N.
+  speed RPM      Set motor speed to the given RPM.
+  status         Report current status.
+  help           Show help.
+  exit/quit      Exit.
+};
+
+print "Keyswitch tester monitor. Type 'help' for help.\n\n";
+
+print "> ";
+
+my $s = IO::Select->new();
+$s->add(\*STDIN);
+$s->add($serial);
+
+my %buffer;
+
+while (my @ready = $s->can_read) {
+    # whenever a fh is ready, read bytes from it, buffer input, split on lines, and
+    # pass off to fh-specific handler (we can't just <$fh> because select() wouldn't
+    # alert us to data that perl has buffered, e.g. in the event that we get 2 lines from
+    # a single sysread() call)
+    for my $fh (@ready) {
+        my $data;
+        my $n = sysread($fh, $data, 1024, 0);
+        if ($n == 0 && $fh == \*STDIN) {
+            func_quit();
+        }
+        $buffer{$fh} .= $data;
+
+        while ($buffer{$fh} =~ s/^(.*?\n)//m) {
+            my $line = $1;
+            $line =~ s/[\r\n]//gm;
+
+            if ($fh == $serial) {
+                handle_serial($line);
+            } else {
+                handle_stdin($line);
+            }
+        }
+    }
+}
+
+sub handle_serial {
+    my ($line) = @_;
+}
+
+sub handle_stdin {
+    my ($line) = @_;
+
+    my @words = split /\s+/, $line;
+
+    if (@words) {
+        if ($function{$words[0]}) {
+            $function{$words[0]}->(@words);
+        } else {
+            print "unrecognised command: $words[0]\n";
+        }
+    }
+
+    print "> ";
+}
+
+sub func_start {
+    my (@words) = @_;
+
+    if (@words > 1) {
+        if ($words[1] !~ /^\d+$/) {
+            print "usage: start [RPM]\n";
+            return;
+        }
+
+        print $serial "speed $words[1]\n";
+    }
+
+    print $serial "start\n";
+}
+
+sub func_stop {
+    print $serial "stop\n";
+}
+
+sub func_record {
+    print "unimplemented\n";
+}
+
+sub func_finish {
+    print "unimplemented\n";
+}
+
+sub func_speed {
+    my (@words) = @_;
+
+    if (@words != 2 || $words[1] !~ /^\d+$/) {
+        print "usage: speed RPM\n";
+        return;
+    }
+
+    print $serial "speed $words[1]\n";
+}
+
+sub func_status {
+    print "unimplemented\n";
+}
+
+sub func_help {
+    print "$help\n";
+}
+
+sub func_quit {
+    print $serial "stop\n";
+    print "Be seeing you.\n";
+    exit 0;
+}
