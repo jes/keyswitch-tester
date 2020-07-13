@@ -26,14 +26,14 @@ void setup()
 
   switchpin[0] = 4;
   switchpin[1] = 10;
-  switchpin[2] = 5;
-  switchpin[3] = 16;
-  switchpin[4] = 14;
-  switchpin[5] = 15;
-  switchpin[6] = A0;
-  switchpin[7] = A1;
-  switchpin[8] = A2;
-  switchpin[9] = A3;
+  switchpin[2] = 15;
+  switchpin[3] = A1;
+  switchpin[4] = 5;
+  switchpin[5] = 14;
+  switchpin[6] = 16;
+  switchpin[7] = A2;
+  switchpin[8] = A3;
+  switchpin[9] = A0;
 
   for (int i = 0; i < 10; i++) {
     pinMode(switchpin[i], INPUT_PULLUP);
