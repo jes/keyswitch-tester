@@ -288,7 +288,7 @@ sub func_status {
     if (!keys %recording) {
         print "Not recording\n";
     }
-    for my $switch (keys %recording) {
+    for my $switch (sort keys %recording) {
         print "Recording switch $switch to $recording{$switch}{filename}: $recording{$switch}{presses} presses\n";
     }
 }
