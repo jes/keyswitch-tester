@@ -13,6 +13,13 @@ my $device = shift or die "$usage\n";
 my $serial = IO::Termios->open($device, "115200,8,n,1")
     or die "can't open $device: $!\n";
 
+# get the Arduino into a known-good state
+print $serial "speed 300\n";
+print $serial "stop\n";
+
+my $speed = 300;
+my $running = 0;
+
 my %recording;
 my %function = (
     start => \&func_start,
@@ -132,13 +139,16 @@ sub func_start {
             return;
         }
 
+        $speed = $words[1];
         print $serial "speed $words[1]\n";
     }
 
+    $running = 1;
     print $serial "start\n";
 }
 
 sub func_stop {
+    $running = 0;
     print $serial "stop\n";
 }
 
@@ -221,11 +231,19 @@ sub func_speed {
         return;
     }
 
+    $speed = $words[1];
     print $serial "speed $words[1]\n";
 }
 
 sub func_status {
-    print "unimplemented\n";
+    print "speed = $speed rpm\n";
+    print "" . ($running ? "Running\n" : "Not running\n");
+    if (!keys %recording) {
+        print "Not recording\n";
+    }
+    for my $switch (keys %recording) {
+        print "Recording switch $switch to $recording{$switch}{filename}\n";
+    }
 }
 
 sub func_help {
