@@ -12,9 +12,9 @@ my $file = shift or die "usage: graph FILE\n";
 # 1. parse FILE into useful TSVs
 
 # temporary file for line segments
-my ($lines_fh, $lines_filename) = tempfile();
+my ($lines_fh, $lines_filename) = tempfile("linesXXXXXX", UNLINK => 1);
 # temporary file for bounce points
-my ($points_fh, $points_filename) = tempfile();
+my ($points_fh, $points_filename) = tempfile("pointsXXXXXX", UNLINK => 1);
 
 open(my $fh, '<', $file)
     or die "can't read $file: $!\n";
@@ -45,8 +45,8 @@ close $fh;
 
 # 2. write gnuplot script
 
-# tempirary file for gnuplot script
-my ($gnuplot_fh, $gnuplot_filename) = tempfile();
+# temporary file for gnuplot script
+my ($gnuplot_fh, $gnuplot_filename) = tempfile("gnuplotXXXXXX", UNLINK => 1);
 
 print $gnuplot_fh qq{
     set xlabel "Press count"
@@ -54,10 +54,11 @@ print $gnuplot_fh qq{
     set yrange [0:$steps_per_rev]
     set title "$file"
     plot "$lines_filename" using 1:2 with lines lc 2 title "On", "$points_filename" using 1:2 with points pt 7 ps 0.3 lc 7 title "Bounce"
+    pause mouse close
 };
 
 # 3. run gnuplot
-system("gnuplot --persist $gnuplot_filename");
+system("gnuplot $gnuplot_filename");
 
 sub write_line_segments {
     my ($fh, $press, @cmds) = @_;
