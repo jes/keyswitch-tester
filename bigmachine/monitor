@@ -17,6 +17,7 @@ my $serial = IO::Termios->open($device, "115200,8,n,1")
 print $serial "speed 300\n";
 print $serial "stop\n";
 
+my $presses = 0;
 my $speed = 300;
 my $running = 0;
 
@@ -107,7 +108,9 @@ sub handle_serial {
     }
 
     if ($line =~ /^\.$/) {
+        $presses++;
         for my $switch (keys %recording) {
+            $recording{$switch}{presses}++;
             my $fh = $recording{$switch}{fh};
             print $fh ".\n";
         }
@@ -144,6 +147,7 @@ sub func_start {
     }
 
     $running = 1;
+    $presses = 0;
     print $serial "start\n";
 }
 
@@ -182,6 +186,7 @@ sub func_record {
     $recording{$switch} = {
         fh => $fh,
         filename => $file,
+        presses => 0,
     };
 }
 
@@ -237,12 +242,13 @@ sub func_speed {
 
 sub func_status {
     print "speed = $speed rpm\n";
+    print "$presses presses since last start\n";
     print "" . ($running ? "Running\n" : "Not running\n");
     if (!keys %recording) {
         print "Not recording\n";
     }
     for my $switch (keys %recording) {
-        print "Recording switch $switch to $recording{$switch}{filename}\n";
+        print "Recording switch $switch to $recording{$switch}{filename}: $recording{$switch}{presses} presses\n";
     }
 }
 

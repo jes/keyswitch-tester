@@ -1,0 +1,113 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use File::Temp qw(tempfile);
+
+my $steps_per_rev = 200;
+
+my $file = shift or die "usage: graph FILE\n";
+
+# 1. parse FILE into useful TSVs
+
+# temporary file for line segments
+my ($lines_fh, $lines_filename) = tempfile();
+# temporary file for bounce points
+my ($points_fh, $points_filename) = tempfile();
+
+open(my $fh, '<', $file)
+    or die "can't read $file: $!\n";
+
+my $press = -1;
+my @cmds;
+
+while (my $line = <$fh>) {
+    chomp $line;
+
+    if ($line eq '.') {
+        if ($press >= 0) {
+            write_line_segments($lines_fh, $press, @cmds);
+            write_points($points_fh, $press, @cmds);
+        }
+        $press++;
+        @cmds = ();
+    } elsif ($line =~ /^([0-9.]+)([+-])$/) {
+        my $step = $1;
+        my $onoff = $2;
+        push @cmds, [$step, $onoff];
+    } else {
+        print STDERR "don't recognise: $line\n";
+    }
+}
+
+close $fh;
+
+# 2. write gnuplot script
+
+# tempirary file for gnuplot script
+my ($gnuplot_fh, $gnuplot_filename) = tempfile();
+
+print $gnuplot_fh qq{
+    set xlabel "Press count"
+    set ylabel "Steps"
+    set yrange [0:$steps_per_rev]
+    set title "$file"
+    plot "$lines_filename" using 1:2 with lines lc 2 title "On", "$points_filename" using 1:2 with points pt 7 ps 0.3 lc 7 title "Bounce"
+};
+
+# 3. run gnuplot
+system("gnuplot --persist $gnuplot_filename");
+
+sub write_line_segments {
+    my ($fh, $press, @cmds) = @_;
+
+    return if @cmds == 0;
+
+    # if the first command is "off", then it was "on" at t=0
+    if ($cmds[0][1] eq '-') {
+        unshift @cmds, [0, "+"];
+    }
+
+    # if the last command is "on", then it was still "on" at t=100
+    if ($cmds[-1][1] eq 'on') {
+        push @cmds, [$steps_per_rev, "-"]
+    }
+
+    my $last = "-";
+
+    for my $c (@cmds) {
+        my ($step, $cmd) = @$c;
+        next if $cmd eq $last; # XXX: if this happens it means an arduino code bug
+
+        $last = $cmd;
+        print $fh "$press $step\n";
+        print $fh "\n" if $cmd eq '-';
+    }
+}
+
+sub write_points {
+    my ($fh, $press, @cmds) = @_;
+
+    return if @cmds == 0;
+
+    # if the first command is "off", then it was "on" at t=0
+    if ($cmds[0][1] eq '-') {
+        unshift @cmds, [0, "+"];
+    }
+
+    # if the last command is "on", then it was still "on" at t=100
+    if ($cmds[-1][1] eq 'on') {
+        push @cmds, [$steps_per_rev, "-"]
+    }
+
+    my $last = "+"; # because we skip the 1st event
+
+    for my $c (@cmds[1..$#cmds-1]) {
+        my ($step, $cmd) = @$c;
+        next if $cmd eq $last; # XXX: if this happens it means an arduino code bug
+
+        $last = $cmd;
+        print $fh "$press $step\n";
+    }
+}
