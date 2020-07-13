@@ -28,6 +28,7 @@ my %function = (
     record => \&func_record,
     finish => \&func_finish,
     rm => \&func_rm,
+    graph => \&func_graph,
     speed => \&func_speed,
     status => \&func_status,
     help => \&func_help,
@@ -47,6 +48,7 @@ Accepted commands:
   record N FILE  Record the data from switch N to the given FILE.
   finish N       Stop recording from switch N.
   rm FILE        Remove the given FILE.
+  graph N|FILE   Graph the given switch N or FILE.
   speed RPM      Set motor speed to the given RPM.
   status         Report current status.
   help           Show help.
@@ -226,6 +228,23 @@ sub func_rm {
         print "unlink $file: $!\n";
         return;
     }
+}
+
+sub func_graph {
+    my (@words) = @_;
+
+    if (@words != 2) {
+        print "usage: graph N|FILE\n";
+        return;
+    }
+
+    my $file = $words[1];
+
+    if ($words[1] =~ /^\d+$/ && $recording{$words[1]}) {
+        $file = $recording{$words[1]}{filename};
+    }
+
+    system("./graph $file &");
 }
 
 sub func_speed {
