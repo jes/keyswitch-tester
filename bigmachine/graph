@@ -71,7 +71,7 @@ sub write_line_segments {
     }
 
     # if the last command is "on", then it was still "on" at t=100
-    if ($cmds[-1][1] eq 'on') {
+    if ($cmds[-1][1] eq '+') {
         push @cmds, [$steps_per_rev, "-"]
     }
 
@@ -98,7 +98,7 @@ sub write_points {
     }
 
     # if the last command is "on", then it was still "on" at t=100
-    if ($cmds[-1][1] eq 'on') {
+    if ($cmds[-1][1] eq '+') {
         push @cmds, [$steps_per_rev, "-"]
     }
 
