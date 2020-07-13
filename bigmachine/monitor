@@ -10,6 +10,8 @@ my $usage = "usage: monitor SERIALPORT\ne.g. monitor /dev/ttyACM0\n";
 
 my $device = shift or die "$usage\n";
 
+my $NSWITCHES = 10;
+
 my $serial = IO::Termios->open($device, "115200,8,n,1")
     or die "can't open $device: $!\n";
 
@@ -43,16 +45,16 @@ $SIG{INT} = \&func_quit;
 my $help = qq{
 Accepted commands:
 
-  start [RPM]    Start the motor (with optional RPM setting).
-  stop           Stop the motor.
-  record N FILE  Record the data from switch N to the given FILE.
-  finish N       Stop recording from switch N.
-  rm FILE        Remove the given FILE.
-  graph N|FILE   Graph the given switch N or FILE.
-  speed RPM      Set motor speed to the given RPM.
-  status         Report current status.
-  help           Show help.
-  exit/quit      Exit.
+  start [RPM]        Start the motor (with optional RPM setting).
+  stop               Stop the motor.
+  record N|all FILE  Record the data from switch N to the given FILE, or all switches to FILE-N.dat
+  finish N|all       Stop recording from switch N, or all switches.
+  rm FILE            Remove the given FILE.
+  graph N|FILE|all   Graph the given switch N or FILE, or all switches.
+  speed RPM          Set motor speed to the given RPM.
+  status             Report current status.
+  help               Show help.
+  exit/quit          Exit.
 };
 
 print "Keyswitch tester monitor. Type 'help' for help.\n\n";
@@ -161,8 +163,16 @@ sub func_stop {
 sub func_record {
     my (@words) = @_;
 
-    if (@words != 3 || $words[1] !~ /^\d+$/) {
-        print "usage: record N FILE\n";
+    if (@words != 3 || ($words[1] !~ /^\d+$/ && $words[1] ne 'all')) {
+        print "usage: record N|all FILE\n";
+        return;
+    }
+
+    if ($words[1] eq 'all') {
+        for my $n (0..$NSWITCHES-1) {
+            # XXX: act like the user typed it...
+            func_record('record', $n, "$words[2]-$n.dat");
+        }
         return;
     }
 
@@ -174,13 +184,8 @@ sub func_record {
         return;
     }
 
-    if (-e $file) {
-        print "$file already exists, cowardly refusing to overwrite (use 'rm $file' to remove it)\n";
-        return;
-    }
-
     my $fh;
-    if (!open($fh, '>', $file)) {
+    if (!open($fh, '>>', $file)) {
         print "can't write $file: $!\n";
         return;
     }
@@ -195,8 +200,17 @@ sub func_record {
 sub func_finish {
     my (@words) = @_;
 
-    if (@words != 2 || $words[1] !~ /^\d+$/) {
-        print "usage: finish N\n";
+    if (@words != 2 || ($words[1] !~ /^\d+$/ && $words[1] ne 'all')) {
+        print "usage: finish N|all\n";
+        return;
+    }
+
+    if ($words[1] eq 'all') {
+        for my $switch (keys %recording) {
+            next if !$recording{$switch};
+            close $recording{$switch}{fh};
+            delete $recording{$switch};
+        }
         return;
     }
 
@@ -234,7 +248,15 @@ sub func_graph {
     my (@words) = @_;
 
     if (@words != 2) {
-        print "usage: graph N|FILE\n";
+        print "usage: graph N|FILE|all\n";
+        return;
+    }
+
+    if ($words[1] eq 'all') {
+        for my $switch (keys %recording) {
+            next if !$recording{$switch};
+            system("./graph $recording{$switch}{filename} &");
+        }
         return;
     }
 

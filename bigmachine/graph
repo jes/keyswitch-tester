@@ -58,7 +58,7 @@ print $gnuplot_fh qq{
 };
 
 # 3. run gnuplot
-system("gnuplot $gnuplot_filename");
+system("gnuplot $gnuplot_filename < /dev/null");
 
 sub write_line_segments {
     my ($fh, $press, @cmds) = @_;
