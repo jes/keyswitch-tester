@@ -13,11 +13,13 @@ my $device = shift or die "$usage\n";
 my $serial = IO::Termios->open($device, "115200,8,n,1")
     or die "can't open $device: $!\n";
 
+my %recording;
 my %function = (
     start => \&func_start,
     stop => \&func_stop,
     record => \&func_record,
     finish => \&func_finish,
+    rm => \&func_rm,
     speed => \&func_speed,
     status => \&func_status,
     help => \&func_help,
@@ -27,6 +29,8 @@ my %function = (
 
 $| = 1;
 
+$SIG{INT} = \&func_quit;
+
 my $help = qq{
 Accepted commands:
 
@@ -34,6 +38,7 @@ Accepted commands:
   stop           Stop the motor.
   record N FILE  Record the data from switch N to the given FILE.
   finish N       Stop recording from switch N.
+  rm FILE        Remove the given FILE.
   speed RPM      Set motor speed to the given RPM.
   status         Report current status.
   help           Show help.
@@ -78,6 +83,28 @@ while (my @ready = $s->can_read) {
 
 sub handle_serial {
     my ($line) = @_;
+
+    if ($line =~ /^error:/) {
+        print STDERR "error from Arduino: $line\n";
+        return;
+    }
+
+    if ($line =~ /^(\d+)([+-])(\d+)$/) {
+        my $step = $1;
+        my $gainedlost = $2;
+        my $switch = $3;
+        if ($recording{$switch}) {
+            my $fh = $recording{$switch}{fh};
+            print $fh "$step$gainedlost\n";
+        }
+    }
+
+    if ($line =~ /^\.$/) {
+        for my $switch (keys %recording) {
+            my $fh = $recording{$switch}{fh};
+            print $fh ".\n";
+        }
+    }
 }
 
 sub handle_stdin {
@@ -116,11 +143,74 @@ sub func_stop {
 }
 
 sub func_record {
-    print "unimplemented\n";
+    my (@words) = @_;
+
+    if (@words != 3 || $words[1] !~ /^\d+$/) {
+        print "usage: record N FILE\n";
+        return;
+    }
+
+    my $switch = $words[1];
+    my $file = $words[2];
+
+    if ($recording{$switch}) {
+        print "already recording switch $switch to $recording{$switch}{filename}\n";
+        return;
+    }
+
+    if (-e $file) {
+        print "$file already exists, cowardly refusing to overwrite (use 'rm $file' to remove it)\n";
+        return;
+    }
+
+    my $fh;
+    if (!open($fh, '>', $file)) {
+        print "can't write $file: $!\n";
+        return;
+    }
+
+    $recording{$switch} = {
+        fh => $fh,
+        filename => $file,
+    };
 }
 
 sub func_finish {
-    print "unimplemented\n";
+    my (@words) = @_;
+
+    if (@words != 2 || $words[1] !~ /^\d+$/) {
+        print "usage: finish N\n";
+        return;
+    }
+
+    my $switch = $words[1];
+    if (!$recording{$switch}) {
+        print "not recording switch $switch\n";
+        return;
+    }
+
+    close $recording{$switch}{fh};
+    delete $recording{$switch};
+}
+
+sub func_rm {
+    my (@words) = @_;
+
+    if (@words != 2) {
+        print "usage: rm FILE\n";
+        return;
+    }
+
+    my $file = $words[1];
+    if (!-e $file) {
+        print "$file does not exist\n";
+        return;
+    }
+
+    if (!unlink $file) {
+        print "unlink $file: $!\n";
+        return;
+    }
 }
 
 sub func_speed {
