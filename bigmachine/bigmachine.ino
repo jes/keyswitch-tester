@@ -3,9 +3,9 @@
 #define BUFSZ 128
 #define NSWITCHES 10
 
-unsigned long last_halfstep;
-int halfstepcount = 0;
-bool stepState;
+volatile unsigned long last_halfstep;
+volatile int halfstepcount = 0;
+volatile bool stepState;
 
 int enablePin = 9;
 int stepPin = 3;
@@ -19,6 +19,7 @@ int targetspeed = 2000; // steps/sec
 int accel = 10; // steps/sec per millisecond
 int steps_per_rev = 200;
 int halfsteps_per_rev = steps_per_rev * 2;
+unsigned long micros_per_halfstep;
 
 void setup()
 {  
@@ -46,6 +47,7 @@ void setup()
   disableStepper();
 
   Timer1.initialize(0);
+  Timer1.stop();
   Timer1.attachInterrupt(timerIsr);
 }
 
@@ -69,8 +71,18 @@ void scanSwitches() {
     int state = !digitalRead(switchpin[i]);
     if (state != switchstate[i]) {
       switchstate[i] = state;
-      Serial.print(halfstepcount/2); Serial.print(state ? '+' : '-'); Serial.println(i);
-      // TODO: we could interpolate between step counts by looking at micros() since last_halfstep
+      unsigned long last = last_halfstep;
+      int count = halfstepcount;
+      double proportion = ((double)(micros() - last) / (double)micros_per_halfstep);
+
+      // XXX: think this can be out of range due to race window between grabbing last_halfstep and halfstepcount?
+      // if proportion > 1 then it means halfstepcount will already haev increased betwee grabbing last_halfstep and calculating
+      // proportion, so we can set the proportion to 0 and assume we already have the updated halfstepcount.
+      if (proportion > 1)
+        proportion = 0;
+
+      double halfsteps = count + proportion;
+      Serial.print(halfsteps/2); Serial.print(state ? '+' : '-'); Serial.println(i);
     }
   }
 }
@@ -90,7 +102,8 @@ void accelerate() {
     } else {
       curspeed = targetspeed;
     }
-    Timer1.setPeriod(500000 / curspeed);
+    micros_per_halfstep = 500000 / curspeed;
+    Timer1.setPeriod(micros_per_halfstep);
    }
 }
 
