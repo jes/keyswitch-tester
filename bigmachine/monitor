@@ -101,7 +101,7 @@ sub handle_serial {
         return;
     }
 
-    if ($line =~ /^(\d+)([+-])(\d+)$/) {
+    if ($line =~ /^([0-9.]+)([+-])(\d+)$/) {
         my $step = $1;
         my $gainedlost = $2;
         my $switch = $3;
