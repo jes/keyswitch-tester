@@ -95,9 +95,9 @@ void accelerate() {
    
    if (millis() > last_accel && curspeed != targetspeed) {
     last_accel = millis();
-    if (targetspeed > curspeed+10) {
+    if (targetspeed > curspeed+accel) {
       curspeed += accel;
-    } else if (targetspeed < curspeed-10) {
+    } else if (targetspeed < curspeed-accel) {
       curspeed -= accel;
     } else {
       curspeed = targetspeed;
